@@ -3,7 +3,7 @@ import { ref, onMounted, toRaw, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next'
 import { LocalUserDetailStore } from '@renderer/store/LocalUserDetail'
-import { downloadSingleSong } from '@renderer/utils/audio/download'
+import { downloadSingleSong, downloadAllSongs } from '@renderer/utils/audio/download'
 
 interface MusicItem {
   singer: string
@@ -209,14 +209,14 @@ const handlePlay = (song: MusicItem) => {
   isPlaying.value = true
   console.log('播放歌曲:', song.name)
   if ((window as any).musicEmitter) {
-    ;(window as any).musicEmitter.emit('addToPlaylistAndPlay', toRaw(song))
+    ; (window as any).musicEmitter.emit('addToPlaylistAndPlay', toRaw(song))
   }
 }
 
 const handlePause = () => {
   isPlaying.value = false
   if ((window as any).musicEmitter) {
-    ;(window as any).musicEmitter.emit('pause')
+    ; (window as any).musicEmitter.emit('pause')
   }
 }
 
@@ -224,10 +224,19 @@ const handleDownload = (song: any) => {
   downloadSingleSong(song)
 }
 
+// 全部下载
+const handleDownloadAll = () => {
+  if (songs.value.length === 0) {
+    MessagePlugin.warning('歌单为空，无法下载')
+    return
+  }
+  downloadAllSongs(songs.value as any)
+}
+
 const handleAddToPlaylist = (song: MusicItem) => {
   console.log('添加到播放列表:', song.name)
   if ((window as any).musicEmitter) {
-    ;(window as any).musicEmitter.emit('addToPlaylistEnd', toRaw(song))
+    ; (window as any).musicEmitter.emit('addToPlaylistEnd', toRaw(song))
   }
 }
 
@@ -348,7 +357,7 @@ const replacePlaylist = (songsToReplace: MusicItem[], shouldShuffle = false) => 
     const shuffledIndexes = Array.from({ length: songsToReplace.length }, (_, i) => i)
     for (let i = shuffledIndexes.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffledIndexes[i], shuffledIndexes[j]] = [shuffledIndexes[j], shuffledIndexes[i]]
+        ;[shuffledIndexes[i], shuffledIndexes[j]] = [shuffledIndexes[j], shuffledIndexes[i]]
     }
 
     // 按打乱的顺序重新排列歌曲
@@ -357,7 +366,7 @@ const replacePlaylist = (songsToReplace: MusicItem[], shouldShuffle = false) => 
 
   // 使用自定义事件替换整个播放列表
   if ((window as any).musicEmitter) {
-    ;(window as any).musicEmitter.emit(
+    ; (window as any).musicEmitter.emit(
       'replacePlaylist',
       finalSongs.map((song) => toRaw(song))
     )
@@ -466,30 +475,19 @@ onMounted(() => {
     <div class="fixed-header" :class="{ compact: isHeaderCompact }">
       <!-- 歌单信息 -->
       <div class="playlist-header" :class="{ compact: isHeaderCompact }">
-        <div
-          class="playlist-cover"
-          :class="{ clickable: isLocalPlaylist }"
-          @click="handleCoverClick"
-        >
+        <div class="playlist-cover" :class="{ clickable: isLocalPlaylist }" @click="handleCoverClick">
           <img :src="playlistInfo.cover" :alt="playlistInfo.title" />
           <!-- 本地歌单显示编辑提示 -->
           <div v-if="isLocalPlaylist" class="cover-overlay">
             <svg class="edit-icon" viewBox="0 0 24 24" fill="currentColor">
               <path
-                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-              />
+                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
             </svg>
             <span>点击修改封面</span>
           </div>
         </div>
         <!-- 隐藏的文件选择器 -->
-        <input
-          ref="fileInputRef"
-          type="file"
-          accept="image/*"
-          style="display: none"
-          @change="handleFileSelect"
-        />
+        <input ref="fileInputRef" type="file" accept="image/*" style="display: none" @change="handleFileSelect" />
         <div class="playlist-details">
           <h1 class="playlist-title">{{ playlistInfo.title }}</h1>
           <p class="playlist-author" :class="{ hidden: isHeaderCompact }">
@@ -501,13 +499,8 @@ onMounted(() => {
 
           <!-- 播放控制按钮 -->
           <div class="playlist-actions" :class="{ compact: isHeaderCompact }">
-            <t-button
-              theme="primary"
-              size="medium"
-              :disabled="songs.length === 0 || loading"
-              class="play-btn"
-              @click="handlePlayPlaylist"
-            >
+            <t-button theme="primary" size="medium" :disabled="songs.length === 0 || loading" class="play-btn"
+              @click="handlePlayPlaylist">
               <template #icon>
                 <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M8 5v14l11-7z" />
@@ -516,21 +509,25 @@ onMounted(() => {
               播放全部
             </t-button>
 
-            <t-button
-              variant="outline"
-              size="medium"
-              :disabled="songs.length === 0 || loading"
-              class="shuffle-btn"
-              @click="handleShufflePlaylist"
-            >
+            <t-button variant="outline" size="medium" :disabled="songs.length === 0 || loading" class="shuffle-btn"
+              @click="handleShufflePlaylist">
               <template #icon>
                 <svg class="shuffle-icon" viewBox="0 0 24 24" fill="currentColor">
                   <path
-                    d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"
-                  />
+                    d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
                 </svg>
               </template>
               随机播放
+            </t-button>
+
+            <t-button variant="outline" size="medium" :disabled="songs.length === 0 || loading" class="download-all-btn"
+              @click="handleDownloadAll">
+              <template #icon>
+                <svg class="download-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                </svg>
+              </template>
+              全部下载
             </t-button>
           </div>
         </div>
@@ -547,23 +544,11 @@ onMounted(() => {
       </div>
 
       <div v-else class="song-list-wrapper">
-        <SongVirtualList
-          ref="songListRef"
-          :songs="songs"
-          :current-song="currentSong"
-          :is-playing="isPlaying"
-          :show-index="true"
-          :show-album="true"
-          :show-duration="true"
-          :is-local-playlist="isLocalPlaylist"
-          :playlist-id="playlistInfo.id"
-          @play="handlePlay"
-          @pause="handlePause"
-          @download="handleDownload"
-          @add-to-playlist="handleAddToPlaylist"
-          @remove-from-local-playlist="handleRemoveFromLocalPlaylist"
-          @scroll="handleScroll"
-        />
+        <SongVirtualList ref="songListRef" :songs="songs" :current-song="currentSong" :is-playing="isPlaying"
+          :show-index="true" :show-album="true" :show-duration="true" :is-local-playlist="isLocalPlaylist"
+          :playlist-id="playlistInfo.id" @play="handlePlay" @pause="handlePause" @download="handleDownload"
+          @add-to-playlist="handleAddToPlaylist" @remove-from-local-playlist="handleRemoveFromLocalPlaylist"
+          @scroll="handleScroll" />
       </div>
     </div>
   </div>
@@ -627,6 +612,7 @@ onMounted(() => {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -651,6 +637,7 @@ onMounted(() => {
     width: 80px !important;
     height: 80px !important;
   }
+
   .playlist-cover {
     width: 120px;
     height: 120px;
@@ -715,6 +702,7 @@ onMounted(() => {
 
   .playlist-details {
     flex: 1;
+
     .playlist-title {
       font-size: 1.5rem;
       font-weight: 600;
@@ -774,7 +762,8 @@ onMounted(() => {
       }
 
       .play-btn,
-      .shuffle-btn {
+      .shuffle-btn,
+      .download-all-btn {
         min-width: 120px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -785,7 +774,8 @@ onMounted(() => {
         }
 
         .play-icon,
-        .shuffle-icon {
+        .shuffle-icon,
+        .download-icon {
           width: 16px;
           height: 16px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -828,7 +818,8 @@ onMounted(() => {
         gap: 0.5rem;
 
         .play-btn,
-        .shuffle-btn {
+        .shuffle-btn,
+        .download-all-btn {
           width: 100%;
           min-width: auto;
         }
@@ -841,10 +832,14 @@ onMounted(() => {
   .playlist-header {
     .playlist-details {
       .playlist-actions {
+
         .play-btn,
-        .shuffle-btn {
+        .shuffle-btn,
+        .download-all-btn {
+
           .play-icon,
-          .shuffle-icon {
+          .shuffle-icon,
+          .download-icon {
             width: 14px;
             height: 14px;
           }
