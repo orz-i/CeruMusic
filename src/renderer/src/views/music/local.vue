@@ -38,6 +38,14 @@ const selectDirs = async () => {
   }
 }
 
+const addDirFromInput = () => {
+  const dir = newDirInput.value?.trim()
+  if (!dir) return
+  const current = Array.isArray(scanDirs.value) ? scanDirs.value : []
+  scanDirs.value = Array.from(new Set([...current, dir]))
+  newDirInput.value = ''
+}
+
 const saveDirs = async () => {
   await (window as any).api.localMusic.setDirs(toRaw(scanDirs.value))
   MessagePlugin.success('目录已保存')
@@ -109,13 +117,13 @@ const scanLibrary = async () => {
 
 const addToPlaylistAndPlay = (song: MusicItem) => {
   if ((window as any).musicEmitter) {
-    ;(window as any).musicEmitter.emit('addToPlaylistAndPlay', toRaw(song) as any)
+    ; (window as any).musicEmitter.emit('addToPlaylistAndPlay', toRaw(song) as any)
   }
 }
 
 const addToPlaylistEnd = (song: MusicItem) => {
   if ((window as any).musicEmitter) {
-    ;(window as any).musicEmitter.emit('addToPlaylistEnd', toRaw(song) as any)
+    ; (window as any).musicEmitter.emit('addToPlaylistEnd', toRaw(song) as any)
   }
 }
 
@@ -269,69 +277,30 @@ onMounted(async () => {
     <n-card title="本地音乐库" size="medium">
       <div class="controls">
         <n-button type="primary" size="small" @click="showDirModal = true">目录管理</n-button>
-        <n-button size="small" :disabled="!hasDirs || loading" @click="scanLibrary"
-          >重新扫描</n-button
-        >
+        <n-button size="small" :disabled="!hasDirs || loading" @click="scanLibrary">重新扫描</n-button>
         <n-tag v-for="d in scanDirs" :key="d" type="default" class="dir-tag">{{ d }}</n-tag>
-        <n-input
-          v-model:value="newDirInput"
-          size="small"
-          placeholder="输入路径或点击选择..."
-          style="max-width: 280px"
-        />
+        <n-input v-model:value="newDirInput" size="small" placeholder="输入路径或点击选择..." style="max-width: 280px" />
         <n-button size="small" @click="selectDirs">选择</n-button>
-        <n-button
-          size="small"
-          @click="
-            () => {
-              if (newDirInput) {
-                scanDirs.value = Array.from(new Set([...(scanDirs.value || []), newDirInput]))
-                newDirInput = ''
-              }
-            }
-          "
-          >添加</n-button
-        >
+        <n-button size="small" @click="addDirFromInput">添加</n-button>
         <n-button size="small" @click="saveDirs">保存目录</n-button>
-        <n-button size="small" :disabled="songs.length === 0" @click="matchBatch"
-          >批量匹配缺失标签</n-button
-        >
+        <n-button size="small" :disabled="songs.length === 0" @click="matchBatch">批量匹配缺失标签</n-button>
         <n-button size="small" @click="clearScan">清空扫描</n-button>
-        <n-select
-          v-model:value="selectedPlaylistId"
-          :options="playlistOptions"
-          size="small"
-          placeholder="选择本地歌单"
-        />
+        <n-select v-model:value="selectedPlaylistId" :options="playlistOptions" size="small" placeholder="选择本地歌单" />
       </div>
 
       <n-modal v-model:show="showDirModal" preset="dialog" title="音乐目录管理">
         <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px">
           <n-input v-model:value="newDirInput" placeholder="输入路径或点击选择..." />
           <n-button @click="selectDirs">选择</n-button>
-          <n-button
-            @click="
-              () => {
-                if (newDirInput) {
-                  scanDirs.value = Array.from(new Set([...(scanDirs.value || []), newDirInput]))
-                  newDirInput = ''
-                }
-              }
-            "
-            >添加</n-button
-          >
+          <n-button @click="addDirFromInput">添加</n-button>
         </div>
         <div>
-          <div
-            v-for="d in scanDirs"
-            :key="d"
-            style="
+          <div v-for="d in scanDirs" :key="d" style="
               display: flex;
               justify-content: space-between;
               align-items: center;
               margin: 6px 0;
-            "
-          >
+            ">
             <span>{{ d }}</span>
             <n-button size="tiny" @click="removeDir(d)">删除</n-button>
           </div>
@@ -363,9 +332,7 @@ onMounted(async () => {
           <div class="col ops">
             <n-button size="tiny" @click="addToPlaylistAndPlay(s)">播放</n-button>
             <n-button size="tiny" @click="addToPlaylistEnd(s)">加入播放列表</n-button>
-            <n-button size="tiny" :loading="matching[s.songmid]" @click="matchTags(s)"
-              >匹配标签</n-button
-            >
+            <n-button size="tiny" :loading="matching[s.songmid]" @click="matchTags(s)">匹配标签</n-button>
             <n-button size="tiny" @click="addToLocalPlaylist(s)">添加到本地歌单</n-button>
           </div>
         </div>
@@ -379,20 +346,24 @@ onMounted(async () => {
 .local-container {
   padding: 16px;
 }
+
 .controls {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
 }
+
 .dir-tag {
   max-width: 360px;
 }
+
 .list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
+
 .row {
   display: grid;
   grid-template-columns: 70px 1fr 1fr 1fr 90px 360px;
@@ -401,15 +372,18 @@ onMounted(async () => {
   padding: 8px;
   border-radius: 6px;
 }
+
 .row.header {
   font-weight: 600;
 }
+
 .col.cover img {
   width: 60px;
   height: 60px;
   object-fit: cover;
   border-radius: 4px;
 }
+
 .empty {
   padding: 24px;
   color: #999;
